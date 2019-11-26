@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package proto;
+
+//option java_package = "array";
+
+//import "bitmap.proto";  yl?
+
+message Array32 {
+    // compatibility guarantee:
+    //     reserved field number: 1, 2, 3, 4
+    //     reserved field name: Cnt, Bitmaps, Offsets, Elts
+    //
+    int32 Cnt               = 1; // current number of elts
+
+    repeated uint64 Bitmaps = 2; // bitmaps[] about which index has elt
+    repeated int32  Offsets = 3; // index offset in `elts` for bitmap[i]
+    bytes  Elts             = 4;
+
+
+    // Flags provides options
+    //
+    // Since 0.5.4
+    uint32 Flags = 10;
+
+
+    // EltWidth set width of elt in bits.
+    //
+    // Since 0.5.4
+    int32 EltWidth = 20;
+
+
+    // BMElts is optimized for elt itself is a bitmap.
+    //
+    // Since 0.5.4
+    Bits BMElts = 30;
+}
+
+
+// Bits is an array.array of bits
+// with rank(how many 1 upto position x, excluding x) index.
+// With option dense, it compresses rank index thus reduces memory usage but a query takes more
+// time, about 14 ns.
+message Bits {
+
+    // Flags provides options
+    uint32 Flags = 1;
+
+
+    // N is the max index of present elt + 1
+    int32 N                 = 10;
+
+
+    // Words contains bitmap
+    repeated uint64 Words = 20;
+
+
+    // RandIndex speeds up rank() by pre-calcuate it
+    // Choose by Flags
+    repeated int32 RankIndex = 30;
+    PolyArray RankIndexDense = 31;
+}
+
+// Segment compress elements with several polynomials.
+// Number of elements in a Segment must be power of 2 in order to speed up
+// Get().
+//
+// Since 0.5.2
+message Segment {
+
+    int32  PolySpan      = 5; // How many elts a poly spans.
+    uint32 PolySpanWidth = 6;
+
+    repeated double Polynomials = 10;
+    repeated uint32 Info        = 11;
+    repeated int64  Words       = 20; // stores 64/EltWidth EltWidth-bits elements in a int64
+}
+
+// PolyArray uses one or more polynomial to compress and store an array.array of int32.
+//
+// Since 0.5.2
+message PolyArray {
+
+    int32  N                  = 10;
+    repeated Segment Segments = 20;
+}
